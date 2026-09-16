@@ -31,9 +31,11 @@ MAX_SECONDS = 16.0
 # Normalizes every label spelling seen across public SER models to our space.
 #
 # "positive" is the only entry that widens a source taxonomy rather than
-# respelling ours. It is DUSHA's sole non-neutral positive class, in a taxonomy
-# whose others are neutral/angry/sad/other, so it carries exactly the happiness
-# mass and nothing else, and no other DUSHA class maps onto happiness.
+# respelling ours. The DUSHA dataset documentation names the class
+# "Happiness (Positive)" outright -- see the emotion list in
+# https://github.com/salute-developers/golos/blob/master/dusha/README.md -- so
+# this is the authors' own equivalence, not an inference from the sibling
+# labels. No other DUSHA class maps onto happiness, so it introduces no merge.
 #
 # "enthusiasm" (Aniemore RESD) is deliberately NOT aliased even though PROMPT
 # below names it under happiness. RESD and Aniemore's xlsr checkpoint both

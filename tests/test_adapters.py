@@ -1,16 +1,22 @@
 """Registry and label-mapping tests for the model adapters.
 
-Runs on literal taxonomies, not weights: no checkpoint is downloaded and neither
-torch nor transformers is imported, so this stays inside the CI contract in
-CONTRIBUTING ("CI runs the score path on a synthetic fixture; it must not
-download models"). See tests/test_model_smoke.py for the opt-in tests that do
-load checkpoints.
+Runs on fixture taxonomies, not weights: no checkpoint is downloaded and
+neither torch nor transformers is imported, so this stays inside the CI
+contract in CONTRIBUTING ("CI runs the score path on a synthetic fixture; it
+must not download models").
+
+Scope note: these tests pin what ``norm_label`` does to a *known* taxonomy.
+They read no ``config.json``, so they cannot detect a checkpoint changing its
+labels upstream -- such a change would leave them passing. That guarantee lives
+in tests/test_model_smoke.py, which asserts the same taxonomies against the
+real downloaded config and is opt-in for exactly that reason.
 """
 
 import importlib.util
 from pathlib import Path
 
 import pytest
+from taxonomies import EXPECTED_ID2LABEL
 
 from oruk_bench.adapters.open_models import ADAPTERS, MODELS, VoxProfileAdapter, get_model_cfg
 from oruk_bench.core import LABELS, norm_label
@@ -53,26 +59,32 @@ class TestLabelMapping:
         registered model free of that collapse."""
         assert norm_label("enthusiasm") is None
 
-    # Published taxonomies of the checkpoints added with these aliases. If an
-    # upstream config.json changes, this is what should fail.
+    # Fixtures, not drift detection: the taxonomy comes from
+    # tests/taxonomies.py, so this pins what norm_label does to a known label
+    # set. It cannot fail if a checkpoint changes its labels upstream -- see
+    # test_model_smoke.py::test_id2label_matches_the_pinned_taxonomy for that.
     @pytest.mark.parametrize(
-        "id2label, expected",
+        "name, expected",
         [
-            # xbgoose DUSHA -- 'other' is unmappable, leaving 4 classes
-            (["neutral", "angry", "positive", "sad", "other"],
+            # DUSHA -- 'other' is unmappable, leaving 4 classes
+            ("hubert-dusha-russian-xbgoose",
              ["neutral", "anger", "happiness", "sadness", None]),
-            # Aniemore RESD -- 'enthusiasm' stays unmapped (see above), leaving
-            # a 6-class model that covers everything but surprise
-            (["anger", "disgust", "enthusiasm", "fear", "happiness", "neutral", "sadness"],
+            # RESD -- 'enthusiasm' stays unmapped (see above), leaving a
+            # 6-class model that covers everything but surprise
+            ("wavlm-resd-russian-aniemore",
              ["anger", "disgust", None, "fear", "happiness", "neutral", "sadness"]),
             # superb ER -- IEMOCAP four-class short forms
-            (["neu", "hap", "ang", "sad"],
+            ("wav2vec2-large-superb-er",
              ["neutral", "happiness", "anger", "sadness"]),
         ],
         ids=["dusha", "resd", "superb-er"],
     )
-    def test_new_checkpoint_taxonomies(self, id2label, expected):
-        assert _map(id2label) == expected
+    def test_fixture_taxonomies_map_as_expected(self, name, expected):
+        assert _map(EXPECTED_ID2LABEL[name]) == expected
+
+    def test_every_pinned_taxonomy_names_a_registered_model(self):
+        registered = {c["name"] for c in MODELS}
+        assert set(EXPECTED_ID2LABEL) <= registered
 
     def test_voxprofile_head_leaves_contempt_and_other_unmapped(self):
         labels = VoxProfileAdapter.VOX_LABELS

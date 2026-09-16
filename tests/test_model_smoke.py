@@ -13,9 +13,12 @@ rather than collected automatically::
 
 What this catches that tests/test_adapters.py cannot: a checkpoint that does not
 exist, has no feature-extractor config, needs trust_remote_code we did not set,
-is wired to the wrong adapter, or whose published id2label maps onto none of our
-seven labels. It runs on CPU and does not need the eval shards -- it proves the
-adapter loads and produces well-formed predictions, not that the model is good.
+is wired to the wrong adapter, whose published id2label maps onto none of our
+seven labels, or whose id2label has drifted upstream from what
+tests/taxonomies.py pins. That last one is the only place drift is detectable at
+all -- the offline tests use the pinned taxonomy as a fixture and never read a
+config. It runs on CPU and does not need the eval shards: it proves the adapter
+loads and produces well-formed predictions, not that the model is good.
 
 Adapters needing setup beyond the Hub are excluded: ``voxprofile`` wants a local
 clone of vox-profile-release, ``funasr``/``speechbrain`` pull their own runtimes,
@@ -27,6 +30,7 @@ import os
 
 import numpy as np
 import pytest
+from taxonomies import EXPECTED_ID2LABEL
 
 from oruk_bench.adapters.open_models import ADAPTERS, MODELS
 from oruk_bench.core import LABELS, TARGET_SR
@@ -58,6 +62,31 @@ def _tone(seconds, freq=220.0):
 def clips():
     # different lengths on purpose: exercises each adapter's padding path
     return [_tone(1.5), _tone(3.0)]
+
+
+PINNED = [cfg for cfg in CANDIDATES if cfg["name"] in EXPECTED_ID2LABEL]
+
+
+@pytest.mark.parametrize("cfg", PINNED, ids=lambda c: c["name"])
+def test_id2label_matches_the_pinned_taxonomy(cfg):
+    """The upstream-drift check the offline fixture tests cannot provide.
+
+    Compares the checkpoint's *ordered* id2label against tests/taxonomies.py.
+    Order matters as much as membership: adapters build out_map positionally,
+    so a checkpoint that reordered or renamed its labels would keep loading and
+    keep predicting, just wrongly. Failing here means the registry entry (and
+    possibly a published score) needs revisiting, not that the test is stale.
+    """
+    adapter = ADAPTERS[cfg["adapter"]](cfg, "cpu")
+    id2label = adapter.model.config.id2label
+    # transformers normalizes to int keys, but sort numerically either way so a
+    # str-keyed config cannot order as "0", "1", "10", "2"
+    actual = [id2label[k] for k in sorted(id2label, key=int)]
+    assert actual == EXPECTED_ID2LABEL[cfg["name"]], (
+        f"{cfg['name']}: upstream id2label changed\n"
+        f"  pinned: {EXPECTED_ID2LABEL[cfg['name']]}\n"
+        f"  actual: {actual}"
+    )
 
 
 @pytest.mark.parametrize("cfg", CANDIDATES, ids=lambda c: c["name"])
