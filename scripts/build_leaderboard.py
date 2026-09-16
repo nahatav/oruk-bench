@@ -53,6 +53,9 @@ OPEN_PARAMS_M = {
     "wav2vec-english-ser-rf": 95,
     "speechbrain-w2v2-iemocap": 95,
     "xlsr-russian-aniemore": 316,
+    "wav2vec2-large-superb-er": 316,
+    "hubert-dusha-russian-xbgoose": 316,
+    "wavlm-resd-russian-aniemore": 317,
 }
 
 # nominal parameter counts (millions) for the open-weight audio-LLMs

@@ -340,6 +340,22 @@ MODELS = [
     {"name": "xlsr-russian-aniemore", "adapter": "hf_audio_cls",
      "model_id": "Aniemore/wav2vec2-xlsr-53-russian-emotion-recognition",
      "trust_remote_code": True, "params_m": 316, "batch_size": 16},
+    {"name": "wav2vec2-large-superb-er", "adapter": "hf_audio_cls",
+     "model_id": "superb/wav2vec2-large-superb-er",
+     "params_m": 316, "batch_size": 16},
+    # DUSHA is spontaneous Russian call-centre speech, not acted studio audio.
+    # id2label {neutral, angry, positive, sad, other}: 'other' stays unmapped,
+    # leaving a 4-class model in our space.
+    {"name": "hubert-dusha-russian-xbgoose", "adapter": "hf_audio_cls",
+     "model_id": ("xbgoose/hubert-large-speech-emotion-recognition-russian-"
+                  "dusha-finetuned"),
+     "params_m": 316, "batch_size": 16},
+    # Second Russian entrant: xlsr-russian-aniemore currently scores below the
+    # 14.3% random baseline, and a same-language sibling is the cheapest way to
+    # tell a weak checkpoint from a broken adapter.
+    {"name": "wavlm-resd-russian-aniemore", "adapter": "hf_audio_cls",
+     "model_id": "Aniemore/wavlm-emotion-russian-resd",
+     "params_m": 317, "batch_size": 16},
 ]
 
 

@@ -29,9 +29,18 @@ TARGET_SR = 16000
 MAX_SECONDS = 16.0
 
 # Normalizes every label spelling seen across public SER models to our space.
+#
+# "positive" and "enthusiasm" are the only entries that widen a source taxonomy
+# rather than respell ours, so both are justified against PROMPT below, which
+# defines happiness as "joy, amusement, enthusiasm, warm or smiling voice":
+#   - "enthusiasm" (Aniemore RESD) is named verbatim in that definition.
+#   - "positive" (DUSHA) is the sole non-neutral positive class in a taxonomy
+#     whose other classes are neutral/angry/sad/other, so it carries exactly
+#     the happiness mass and nothing else.
 LABEL_ALIASES = {
     "anger": "anger", "angry": "anger", "ang": "anger",
     "happiness": "happiness", "happy": "happiness", "hap": "happiness", "joy": "happiness",
+    "enthusiasm": "happiness", "positive": "happiness",
     "sadness": "sadness", "sad": "sadness",
     "fear": "fear", "fearful": "fear", "fea": "fear",
     "disgust": "disgust", "disgusted": "disgust", "dis": "disgust",
