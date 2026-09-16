@@ -41,10 +41,17 @@ class TestOpenModelRegistry:
 
 class TestLabelMapping:
     def test_new_aliases(self):
-        assert norm_label("enthusiasm") == "happiness"
         assert norm_label("positive") == "happiness"
         assert norm_label("calm") == "neutral"   # unchanged
         assert norm_label("bogus") is None
+
+    def test_enthusiasm_is_deliberately_unmapped(self):
+        """RESD and Aniemore's xlsr checkpoint expose enthusiasm *and*
+        happiness. Aliasing enthusiasm would collapse two mutually exclusive
+        softmax classes onto one of ours, and the adapters merge duplicates
+        with max() rather than summing. Leaving it unmapped keeps every
+        registered model free of that collapse."""
+        assert norm_label("enthusiasm") is None
 
     # Published taxonomies of the checkpoints added with these aliases. If an
     # upstream config.json changes, this is what should fail.
@@ -54,9 +61,10 @@ class TestLabelMapping:
             # xbgoose DUSHA -- 'other' is unmappable, leaving 4 classes
             (["neutral", "angry", "positive", "sad", "other"],
              ["neutral", "anger", "happiness", "sadness", None]),
-            # Aniemore RESD -- 'enthusiasm' merges into happiness
+            # Aniemore RESD -- 'enthusiasm' stays unmapped (see above), leaving
+            # a 6-class model that covers everything but surprise
             (["anger", "disgust", "enthusiasm", "fear", "happiness", "neutral", "sadness"],
-             ["anger", "disgust", "happiness", "fear", "happiness", "neutral", "sadness"]),
+             ["anger", "disgust", None, "fear", "happiness", "neutral", "sadness"]),
             # superb ER -- IEMOCAP four-class short forms
             (["neu", "hap", "ang", "sad"],
              ["neutral", "happiness", "anger", "sadness"]),

@@ -30,17 +30,22 @@ MAX_SECONDS = 16.0
 
 # Normalizes every label spelling seen across public SER models to our space.
 #
-# "positive" and "enthusiasm" are the only entries that widen a source taxonomy
-# rather than respell ours, so both are justified against PROMPT below, which
-# defines happiness as "joy, amusement, enthusiasm, warm or smiling voice":
-#   - "enthusiasm" (Aniemore RESD) is named verbatim in that definition.
-#   - "positive" (DUSHA) is the sole non-neutral positive class in a taxonomy
-#     whose other classes are neutral/angry/sad/other, so it carries exactly
-#     the happiness mass and nothing else.
+# "positive" is the only entry that widens a source taxonomy rather than
+# respelling ours. It is DUSHA's sole non-neutral positive class, in a taxonomy
+# whose others are neutral/angry/sad/other, so it carries exactly the happiness
+# mass and nothing else, and no other DUSHA class maps onto happiness.
+#
+# "enthusiasm" (Aniemore RESD) is deliberately NOT aliased even though PROMPT
+# below names it under happiness. RESD and Aniemore's xlsr checkpoint both
+# expose enthusiasm *and* happiness, so aliasing it would map two mutually
+# exclusive softmax classes onto one of ours -- and the adapters combine
+# duplicates with max() rather than summing, which under-counts the merged
+# class. Until that aggregation is settled, enthusiasm stays unmapped and its
+# mass is ignored, like any other class we cannot represent.
 LABEL_ALIASES = {
     "anger": "anger", "angry": "anger", "ang": "anger",
     "happiness": "happiness", "happy": "happiness", "hap": "happiness", "joy": "happiness",
-    "enthusiasm": "happiness", "positive": "happiness",
+    "positive": "happiness",
     "sadness": "sadness", "sad": "sadness",
     "fear": "fear", "fearful": "fear", "fea": "fear",
     "disgust": "disgust", "disgusted": "disgust", "dis": "disgust",
